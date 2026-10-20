@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AegisLift - AI-Driven Workout Tracker</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1 class="logo-text">AegisLift</h1>
+          <p class="logo-sub">AI-Powered Training Log</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge-pill" id="todayDateBadge">今日</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-record" id="navRecordBtn">
+        <span class="tab-icon">🏋️</span>
+        <span class="tab-label">記録</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-timer" id="navTimerBtn">
+        <span class="tab-icon">⏱️</span>
+        <span class="tab-label">タイマー</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-history" id="navHistoryBtn">
+        <span class="tab-icon">📈</span>
+        <span class="tab-label">履歴・分析</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Tab 1: Workout Record Form -->
+      <section id="tab-record" class="tab-pane active">
+        <!-- Quick Stats Banner -->
+        <div class="stat-banner">
+          <div class="stat-item">
+            <span class="stat-label">本日総負荷量 (Volume)</span>
+            <span class="stat-value" id="todayVolume">0 <span class="unit">kg</span></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">完了セット数</span>
+            <span class="stat-value" id="todaySets">0 <span class="unit">sets</span></span>
+          </div>
+        </div>
+
+        <!-- Logging Card -->
+        <div class="card glass-card">
+          <h2 class="card-title">セット記録</h2>
+
+          <form id="workoutForm" onsubmit="return false;">
+            <!-- Exercise Selection -->
+            <div class="form-group">
+              <label for="exerciseSelect">種目</label>
+              <div class="select-wrapper">
+                <select id="exerciseSelect" class="form-input">
+                  <optgroup label="胸 (Chest)">
+                    <option value="ベンチプレス" selected>ベンチプレス (Barbell Bench Press)</option>
+                    <option value="インクラインダンベルプレス">インクラインダンベルプレス</option>
+                    <option value="ダンベルフライ">ダンベルフライ</option>
+                  </optgroup>
+                  <optgroup label="背中 (Back)">
+                    <option value="デッドリフト">デッドリフト (Deadlift)</option>
+                    <option value="懸垂 (チンニング)">懸垂 (チンニング)</option>
+                    <option value="ラットプルダウン">ラットプルダウン</option>
+                  </optgroup>
+                  <optgroup label="脚 (Legs)">
+                    <option value="スクワット">スクワット (Squat)</option>
+                    <option value="レッグプレス">レッグプレス</option>
+                  </optgroup>
+                  <optgroup label="肩・腕 (Shoulders & Arms)">
+                    <option value="ショルダープレス">ショルダープレス</option>
+                    <option value="サイドレイズ">サイドレイズ</option>
+                    <option value="アームカール">アームカール</option>
+                  </optgroup>
+                  <optgroup label="カスタム">
+                    <option value="__custom__">＋ 新規種目を追加...</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div id="customExerciseWrapper" class="custom-input-wrapper hidden">
+                <input type="text" id="customExerciseInput" class="form-input" placeholder="新しい種目名を入力">
+              </div>
+            </div>
+
+            <!-- Previous Best Reference -->
+            <div class="reference-banner" id="previousBestBanner">
+              <span class="ref-icon">💡</span>
+              <span class="ref-text" id="previousBestText">前回記録: なし (最初のセットを記録しよう)</span>
+            </div>
+
+            <!-- Weight and Reps Row -->
+            <div class="row-inputs">
+              <!-- Weight Input -->
+              <div class="form-group flex-1">
+                <label for="weightInput">重量 (kg)</label>
+                <div class="stepper-input">
+                  <button type="button" class="step-btn" id="btnWeightMinus5">-5</button>
+                  <button type="button" class="step-btn" id="btnWeightMinus">-1</button>
+                  <input type="number" id="weightInput" class="form-input text-center" value="60" step="0.5" min="0">
+                  <button type="button" class="step-btn" id="btnWeightPlus">+1</button>
+                  <button type="button" class="step-btn" id="btnWeightPlus5">+5</button>
+                </div>
+              </div>
+
+              <!-- Reps Input -->
+              <div class="form-group flex-1">
+                <label for="repsInput">回数 (Reps)</label>
+                <div class="stepper-input">
+                  <button type="button" class="step-btn" id="btnRepsMinus">-1</button>
+                  <input type="number" id="repsInput" class="form-input text-center" value="10" min="1" max="100">
+                  <button type="button" class="step-btn" id="btnRepsPlus">+1</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Auto Timer Toggle -->
+            <div class="checkbox-row">
+              <label class="toggle-container">
+                <input type="checkbox" id="autoStartTimerToggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">セット記録後にインターバルタイマーを自動開始 (90秒)</span>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="button" class="primary-btn pulse-glow" id="btnSaveSet">
+              <span>⚡ セットを完了して記録</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Today's Log Summary -->
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">本日のトレーニングログ</h2>
+            <button class="text-btn danger" id="btnClearTodayBtn">本日のログを消去</button>
+          </div>
+          <div id="todaySetsList" class="sets-list">
+            <div class="empty-state">まだ本日の記録はありません</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Interval Timer -->
+      <section id="tab-timer" class="tab-pane">
+        <div class="card glass-card timer-card">
+          <h2 class="card-title text-center">インターバルタイマー</h2>
+          <p class="card-sub text-center">筋肥大・筋力強化に最適な休息時間をキープ</p>
+
+          <!-- Circular Display -->
+          <div class="timer-display-container">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+              <circle class="timer-bg-circle" cx="50" cy="50" r="45"></circle>
+              <circle class="timer-progress-circle" id="timerProgressCircle" cx="50" cy="50" r="45"></circle>
+            </svg>
+            <div class="timer-text-overlay">
+              <span class="timer-digits" id="timerDigits">01:30</span>
+              <span class="timer-status" id="timerStatus">READY</span>
+            </div>
+          </div>
+
+          <!-- Preset Buttons -->
+          <div class="preset-buttons">
+            <button class="preset-btn" data-sec="60">60秒 (筋肥大)</button>
+            <button class="preset-btn active" data-sec="90">90秒 (標準)</button>
+            <button class="preset-btn" data-sec="120">120秒 (高重量)</button>
+            <button class="preset-btn" data-sec="180">180秒 (BIG3)</button>
+          </div>
+
+          <!-- Controls -->
+          <div class="timer-controls">
+            <button class="secondary-btn" id="btnTimerReset">リセット</button>
+            <button class="primary-btn" id="btnTimerStart">タイマースタート</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: History & Analytics -->
+      <section id="tab-history" class="tab-pane">
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">種目別 MAX記録</h2>
+          </div>
+          <div id="maxRecordsContainer" class="max-records-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">重量の推移グラフ</h2>
+          </div>
+          <div class="select-wrapper chart-controls">
+            <select id="chartExerciseSelect" class="form-input"></select>
+          </div>
+          <div id="progressChart" class="chart-wrap"></div>
+        </div>
+
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">全履歴</h2>
+            <button class="text-btn danger" id="btnClearAllHistoryBtn">全履歴クリア</button>
+          </div>
+          <div id="allHistoryList" class="history-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">データ管理</h2>
+          </div>
+          <div class="data-actions">
+            <button class="secondary-btn" id="btnExportData">📤 エクスポート</button>
+            <button class="secondary-btn" id="btnImportData">📥 インポート</button>
+            <input type="file" id="importFileInput" accept="application/json,.json" class="hidden">
+          </div>
+          <p class="data-note">記録はこのブラウザ内にのみ保存されます。定期的にバックアップしましょう。</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Floating Timer Pill (Visible across tabs when running) -->
+    <div id="floatingTimerPill" class="floating-pill hidden">
+      <span>⏱️ 残り: <strong id="floatingTimerSec">90</strong>s</span>
+      <button id="floatingStopBtn" class="pill-stop-btn">×</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
