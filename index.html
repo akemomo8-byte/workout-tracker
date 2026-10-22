@@ -2,8 +2,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AegisLift - AI-Driven Workout Tracker</title>
+  <meta name="description" content="筋トレの記録、インターバルタイマー、推移グラフ、カレンダー、週間レポートまでできるワークアウトトラッカー。">
+  <meta name="theme-color" content="#0a0e17">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="AegisLift">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +32,7 @@
       </div>
       <div class="header-badges">
         <span class="badge-pill" id="todayDateBadge">今日</span>
+        <button class="icon-btn" id="themeToggleBtn" type="button" title="テーマ切り替え" aria-label="テーマ切り替え">🌙</button>
       </div>
     </header>
 
@@ -38,14 +48,27 @@
       </button>
       <button class="tab-btn" data-tab="tab-history" id="navHistoryBtn">
         <span class="tab-icon">📈</span>
-        <span class="tab-label">履歴・分析</span>
+        <span class="tab-label">履歴</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-analysis" id="navAnalysisBtn">
+        <span class="tab-icon">📅</span>
+        <span class="tab-label">分析</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-settings" id="navSettingsBtn">
+        <span class="tab-icon">⚙️</span>
+        <span class="tab-label">設定</span>
       </button>
     </nav>
 
-    <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Tab 1: Workout Record Form -->
+      <!-- ============ Tab 1: Record ============ -->
       <section id="tab-record" class="tab-pane active">
+        <!-- Backup reminder -->
+        <div id="backupBanner" class="notice-banner hidden">
+          <span id="backupBannerText">バックアップを取りましょう</span>
+          <button class="notice-btn" id="btnBackupNow" type="button">今すぐ保存</button>
+        </div>
+
         <!-- Quick Stats Banner -->
         <div class="stat-banner">
           <div class="stat-item">
@@ -58,6 +81,16 @@
           </div>
         </div>
 
+        <!-- Routine Bar -->
+        <div class="card glass-card hidden" id="routineCard">
+          <div class="card-header-flex">
+            <h2 class="card-title">ルーティン</h2>
+            <span class="card-hint" id="routineProgress"></span>
+          </div>
+          <div class="chip-row" id="routineChips"></div>
+          <div class="chip-row routine-exercises hidden" id="routineExerciseChips"></div>
+        </div>
+
         <!-- Logging Card -->
         <div class="card glass-card">
           <h2 class="card-title">セット記録</h2>
@@ -67,33 +100,11 @@
             <div class="form-group">
               <label for="exerciseSelect">種目</label>
               <div class="select-wrapper">
-                <select id="exerciseSelect" class="form-input">
-                  <optgroup label="胸 (Chest)">
-                    <option value="ベンチプレス" selected>ベンチプレス (Barbell Bench Press)</option>
-                    <option value="インクラインダンベルプレス">インクラインダンベルプレス</option>
-                    <option value="ダンベルフライ">ダンベルフライ</option>
-                  </optgroup>
-                  <optgroup label="背中 (Back)">
-                    <option value="デッドリフト">デッドリフト (Deadlift)</option>
-                    <option value="懸垂 (チンニング)">懸垂 (チンニング)</option>
-                    <option value="ラットプルダウン">ラットプルダウン</option>
-                  </optgroup>
-                  <optgroup label="脚 (Legs)">
-                    <option value="スクワット">スクワット (Squat)</option>
-                    <option value="レッグプレス">レッグプレス</option>
-                  </optgroup>
-                  <optgroup label="肩・腕 (Shoulders & Arms)">
-                    <option value="ショルダープレス">ショルダープレス</option>
-                    <option value="サイドレイズ">サイドレイズ</option>
-                    <option value="アームカール">アームカール</option>
-                  </optgroup>
-                  <optgroup label="カスタム">
-                    <option value="__custom__">＋ 新規種目を追加...</option>
-                  </optgroup>
-                </select>
+                <select id="exerciseSelect" class="form-input"></select>
               </div>
               <div id="customExerciseWrapper" class="custom-input-wrapper hidden">
-                <input type="text" id="customExerciseInput" class="form-input" placeholder="新しい種目名を入力">
+                <input type="text" id="customExerciseInput" class="form-input" placeholder="新しい種目名を入力" maxlength="40">
+                <select id="customPartSelect" class="form-input custom-part-select" aria-label="部位"></select>
               </div>
             </div>
 
@@ -105,28 +116,53 @@
 
             <!-- Weight and Reps Row -->
             <div class="row-inputs">
-              <!-- Weight Input -->
               <div class="form-group flex-1">
                 <label for="weightInput">重量 (kg)</label>
                 <div class="stepper-input">
-                  <button type="button" class="step-btn" id="btnWeightMinus5">-5</button>
-                  <button type="button" class="step-btn" id="btnWeightMinus">-1</button>
-                  <input type="number" id="weightInput" class="form-input text-center" value="60" step="0.5" min="0">
-                  <button type="button" class="step-btn" id="btnWeightPlus">+1</button>
-                  <button type="button" class="step-btn" id="btnWeightPlus5">+5</button>
+                  <button type="button" class="step-btn" id="btnWeightMinus5" data-hold="1">-5</button>
+                  <button type="button" class="step-btn" id="btnWeightMinus" data-hold="1">-1</button>
+                  <input type="number" id="weightInput" class="form-input text-center" value="60" step="0.5" min="0" inputmode="decimal">
+                  <button type="button" class="step-btn" id="btnWeightPlus" data-hold="1">+1</button>
+                  <button type="button" class="step-btn" id="btnWeightPlus5" data-hold="1">+5</button>
                 </div>
               </div>
 
-              <!-- Reps Input -->
               <div class="form-group flex-1">
                 <label for="repsInput">回数 (Reps)</label>
                 <div class="stepper-input">
-                  <button type="button" class="step-btn" id="btnRepsMinus">-1</button>
-                  <input type="number" id="repsInput" class="form-input text-center" value="10" min="1" max="100">
-                  <button type="button" class="step-btn" id="btnRepsPlus">+1</button>
+                  <button type="button" class="step-btn" id="btnRepsMinus" data-hold="1">-1</button>
+                  <input type="number" id="repsInput" class="form-input text-center" value="10" min="1" max="100" inputmode="numeric">
+                  <button type="button" class="step-btn" id="btnRepsPlus" data-hold="1">+1</button>
                 </div>
               </div>
             </div>
+
+            <div class="e1rm-preview" id="e1rmPreview">推定1RM: -</div>
+
+            <!-- Details: RPE / Memo -->
+            <details class="detail-box">
+              <summary>RPE・メモ (任意)</summary>
+              <div class="detail-grid">
+                <div class="form-group">
+                  <label for="rpeSelect">RPE (きつさ 6〜10)</label>
+                  <select id="rpeSelect" class="form-input">
+                    <option value="">未選択</option>
+                    <option value="6">6 (余裕あり)</option>
+                    <option value="7">7</option>
+                    <option value="7.5">7.5</option>
+                    <option value="8">8</option>
+                    <option value="8.5">8.5</option>
+                    <option value="9">9</option>
+                    <option value="9.5">9.5</option>
+                    <option value="10">10 (限界)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="memoInput">メモ</label>
+                  <input type="text" id="memoInput" class="form-input" placeholder="例: フォーム意識、肩がきつい" maxlength="80">
+                </div>
+              </div>
+            </details>
 
             <!-- Auto Timer Toggle -->
             <div class="checkbox-row">
@@ -134,12 +170,15 @@
                 <input type="checkbox" id="autoStartTimerToggle" checked>
                 <span class="toggle-slider"></span>
               </label>
-              <span class="toggle-label">セット記録後にインターバルタイマーを自動開始 (90秒)</span>
+              <span class="toggle-label" id="autoTimerLabel">セット記録後にインターバルタイマーを自動開始 (90秒)</span>
             </div>
 
-            <!-- Submit Button -->
+            <!-- Submit Buttons -->
             <button type="button" class="primary-btn pulse-glow" id="btnSaveSet">
               <span>⚡ セットを完了して記録</span>
+            </button>
+            <button type="button" class="secondary-btn full-btn" id="btnRepeatLast">
+              <span>🔁 前回と同じ内容で記録</span>
             </button>
           </form>
         </div>
@@ -156,13 +195,12 @@
         </div>
       </section>
 
-      <!-- Tab 2: Interval Timer -->
+      <!-- ============ Tab 2: Timer ============ -->
       <section id="tab-timer" class="tab-pane">
         <div class="card glass-card timer-card">
           <h2 class="card-title text-center">インターバルタイマー</h2>
           <p class="card-sub text-center">筋肥大・筋力強化に最適な休息時間をキープ</p>
 
-          <!-- Circular Display -->
           <div class="timer-display-container">
             <svg class="timer-svg" viewBox="0 0 100 100">
               <circle class="timer-bg-circle" cx="50" cy="50" r="45"></circle>
@@ -174,7 +212,6 @@
             </div>
           </div>
 
-          <!-- Preset Buttons -->
           <div class="preset-buttons">
             <button class="preset-btn" data-sec="60">60秒 (筋肥大)</button>
             <button class="preset-btn active" data-sec="90">90秒 (標準)</button>
@@ -182,31 +219,56 @@
             <button class="preset-btn" data-sec="180">180秒 (BIG3)</button>
           </div>
 
-          <!-- Controls -->
           <div class="timer-controls">
             <button class="secondary-btn" id="btnTimerReset">リセット</button>
             <button class="primary-btn" id="btnTimerStart">タイマースタート</button>
           </div>
+
+          <div class="timer-options">
+            <div class="checkbox-row compact">
+              <label class="toggle-container">
+                <input type="checkbox" id="wakeLockToggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">タイマー中は画面を点灯したままにする</span>
+            </div>
+            <div class="checkbox-row compact">
+              <label class="toggle-container">
+                <input type="checkbox" id="notifyToggle">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">終了時に通知する (許可が必要)</span>
+            </div>
+            <p class="data-note">※ 画面を消すとスマホによりタイマーが止まることがあります。確実に知らせるには、画面点灯をオンにしてください。</p>
+          </div>
         </div>
       </section>
 
-      <!-- Tab 3: History & Analytics -->
+      <!-- ============ Tab 3: History ============ -->
       <section id="tab-history" class="tab-pane">
         <div class="card glass-card">
           <div class="card-header-flex">
             <h2 class="card-title">種目別 MAX記録</h2>
           </div>
-          <div id="maxRecordsContainer" class="max-records-grid">
-            <!-- Dynamically populated -->
-          </div>
+          <div id="maxRecordsContainer" class="max-records-grid"></div>
         </div>
 
         <div class="card glass-card">
           <div class="card-header-flex">
-            <h2 class="card-title">重量の推移グラフ</h2>
+            <h2 class="card-title">推移グラフ</h2>
           </div>
           <div class="select-wrapper chart-controls">
             <select id="chartExerciseSelect" class="form-input"></select>
+          </div>
+          <div class="segmented" id="chartMetricSeg" role="group" aria-label="指標">
+            <button type="button" class="seg-btn active" data-metric="weight">最大重量</button>
+            <button type="button" class="seg-btn" data-metric="e1rm">推定1RM</button>
+            <button type="button" class="seg-btn" data-metric="volume">総ボリューム</button>
+          </div>
+          <div class="segmented" id="chartPeriodSeg" role="group" aria-label="期間">
+            <button type="button" class="seg-btn" data-period="30">1か月</button>
+            <button type="button" class="seg-btn" data-period="90">3か月</button>
+            <button type="button" class="seg-btn active" data-period="all">全期間</button>
           </div>
           <div id="progressChart" class="chart-wrap"></div>
         </div>
@@ -216,8 +278,99 @@
             <h2 class="card-title">全履歴</h2>
             <button class="text-btn danger" id="btnClearAllHistoryBtn">全履歴クリア</button>
           </div>
-          <div id="allHistoryList" class="history-list">
-            <!-- Dynamically populated -->
+          <div id="allHistoryList" class="history-list"></div>
+        </div>
+      </section>
+
+      <!-- ============ Tab 4: Analysis ============ -->
+      <section id="tab-analysis" class="tab-pane">
+        <!-- Calendar -->
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">トレーニングカレンダー</h2>
+          </div>
+          <div class="streak-row">
+            <div class="streak-item">
+              <span class="streak-value" id="streakCurrent">0</span>
+              <span class="streak-label">連続日数</span>
+            </div>
+            <div class="streak-item">
+              <span class="streak-value" id="streakLongest">0</span>
+              <span class="streak-label">最長記録</span>
+            </div>
+            <div class="streak-item">
+              <span class="streak-value" id="streakMonth">0</span>
+              <span class="streak-label">今月の日数</span>
+            </div>
+          </div>
+          <div class="cal-nav">
+            <button type="button" class="icon-btn" id="calPrev" aria-label="前の月">‹</button>
+            <span class="cal-title" id="calTitle"></span>
+            <button type="button" class="icon-btn" id="calNext" aria-label="次の月">›</button>
+          </div>
+          <div class="cal-grid cal-head" id="calHead"></div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-detail" id="calDetail"></div>
+        </div>
+
+        <!-- Report -->
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">レポート</h2>
+          </div>
+          <div class="segmented" id="reportSeg" role="group" aria-label="期間">
+            <button type="button" class="seg-btn active" data-report="week">週間</button>
+            <button type="button" class="seg-btn" data-report="month">月間</button>
+          </div>
+          <div id="reportSummary" class="report-summary"></div>
+          <h3 class="sub-title">ボリュームの推移</h3>
+          <div id="reportBars" class="chart-wrap"></div>
+          <h3 class="sub-title">部位別の割合</h3>
+          <div id="partBreakdown" class="part-breakdown"></div>
+        </div>
+
+        <!-- Body weight -->
+        <div class="card glass-card">
+          <div class="card-header-flex">
+            <h2 class="card-title">体重の記録</h2>
+          </div>
+          <div class="bw-input-row">
+            <input type="date" id="bwDateInput" class="form-input">
+            <input type="number" id="bwInput" class="form-input" placeholder="kg" step="0.1" min="0" inputmode="decimal">
+            <button type="button" class="primary-btn bw-save" id="btnSaveBw">記録</button>
+          </div>
+          <div id="bwStats" class="report-summary"></div>
+          <div id="bwChart" class="chart-wrap"></div>
+          <div id="bwList" class="sets-list"></div>
+        </div>
+      </section>
+
+      <!-- ============ Tab 5: Settings ============ -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="card glass-card">
+          <h2 class="card-title">テーマ</h2>
+          <div class="segmented" id="themeSeg" role="group" aria-label="テーマ">
+            <button type="button" class="seg-btn" data-theme-opt="auto">自動</button>
+            <button type="button" class="seg-btn" data-theme-opt="dark">ダーク</button>
+            <button type="button" class="seg-btn" data-theme-opt="light">ライト</button>
+          </div>
+        </div>
+
+        <div class="card glass-card">
+          <h2 class="card-title">種目の管理</h2>
+          <p class="data-note nm">並べ替えや削除ができます。削除しても過去の記録は残ります。</p>
+          <div id="exerciseManageList" class="manage-list"></div>
+          <button type="button" class="text-btn" id="btnRestoreExercises">削除した標準種目を元に戻す</button>
+        </div>
+
+        <div class="card glass-card">
+          <h2 class="card-title">ルーティン登録</h2>
+          <p class="data-note nm">「胸の日」など、よく行う種目の組み合わせを登録します。記録タブからワンタップで呼び出せます。</p>
+          <div id="routineManageList" class="manage-list"></div>
+          <div class="routine-form">
+            <input type="text" id="routineNameInput" class="form-input" placeholder="ルーティン名 (例: 胸の日)" maxlength="20">
+            <div id="routineExercisePicker" class="chip-row picker"></div>
+            <button type="button" class="secondary-btn full-btn" id="btnAddRoutine">＋ ルーティンを追加</button>
           </div>
         </div>
 
@@ -230,15 +383,72 @@
             <button class="secondary-btn" id="btnImportData">📥 インポート</button>
             <input type="file" id="importFileInput" accept="application/json,.json" class="hidden">
           </div>
-          <p class="data-note">記録はこのブラウザ内にのみ保存されます。定期的にバックアップしましょう。</p>
+          <p class="data-note" id="lastBackupText">まだバックアップしていません。</p>
+          <div class="checkbox-row compact">
+            <label class="toggle-container">
+              <input type="checkbox" id="backupReminderToggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">7日以上バックアップしていなければ記録タブでお知らせ</span>
+          </div>
+          <p class="data-note">記録・体重・設定がすべて1つのファイルに保存されます。</p>
+        </div>
+
+        <div class="card glass-card">
+          <h2 class="card-title">アプリについて</h2>
+          <p class="data-note nm" id="installHint">ホーム画面に追加すると、アプリのように全画面で使えます。オフラインでも動作します。</p>
+          <p class="data-note" id="offlineStatus"></p>
         </div>
       </section>
     </main>
 
-    <!-- Floating Timer Pill (Visible across tabs when running) -->
+    <!-- Floating Timer Pill -->
     <div id="floatingTimerPill" class="floating-pill hidden">
       <span>⏱️ 残り: <strong id="floatingTimerSec">90</strong>s</span>
       <button id="floatingStopBtn" class="pill-stop-btn">×</button>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="modal-card">
+        <h2 class="card-title" id="editModalTitle">セットを編集</h2>
+        <p class="modal-sub" id="editExerciseName"></p>
+        <div class="row-inputs">
+          <div class="form-group flex-1">
+            <label for="editWeight">重量 (kg)</label>
+            <input type="number" id="editWeight" class="form-input text-center" step="0.5" min="0" inputmode="decimal">
+          </div>
+          <div class="form-group flex-1">
+            <label for="editReps">回数</label>
+            <input type="number" id="editReps" class="form-input text-center" min="1" max="100" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="editRpe">RPE</label>
+          <select id="editRpe" class="form-input">
+            <option value="">未選択</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="7.5">7.5</option>
+            <option value="8">8</option>
+            <option value="8.5">8.5</option>
+            <option value="9">9</option>
+            <option value="9.5">9.5</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editMemo">メモ</label>
+          <input type="text" id="editMemo" class="form-input" maxlength="80">
+        </div>
+        <div class="timer-controls modal-actions">
+          <button type="button" class="secondary-btn" id="btnEditCancel">キャンセル</button>
+          <button type="button" class="primary-btn" id="btnEditSave">保存</button>
+        </div>
+      </div>
     </div>
   </div>
 
